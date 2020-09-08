@@ -1,0 +1,54 @@
+@using Core
+@using System.Reflection
+
+@inject IDbContext _db
+
+<table>
+
+    <thead>
+        <tr>
+            @foreach (PropertyInfo prop in GetModelProprety(ModelType))
+            {
+                <th scope="col">
+                    @prop.Name
+                </th>
+            }
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (dynamic i in (IEnumerable<dynamic>)this.GetType().GetMethod("GetData").MakeGenericMethod(ModelType).Invoke(this, null))
+        {
+            <tr>
+                @foreach (PropertyInfo prop in GetModelProprety(ModelType))
+                {
+                    <td>
+                        @prop.GetValue(i)
+                    </td>
+                }
+            </tr>
+        }
+    </tbody>
+
+</table>
+
+
+
+@code {
+
+    [Parameter]
+    public Type ModelType { private get; set; }
+
+
+    internal IEnumerable<PropertyInfo> GetModelProprety(Type modelType)
+    {
+        return modelType.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+    }
+
+    public IEnumerable<T> GetData<T>() where T : class
+    {
+        return (_db.GetType().GetMethod("Set").MakeGenericMethod(ModelType).Invoke(_db, null) as Microsoft.EntityFrameworkCore.DbSet<T>).ToList();
+    }
+
+
+}
